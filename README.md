@@ -66,5 +66,5 @@ Used mainly for logout (index.php?mylogout=).
 
 ## Cache specific URL
 
-``php bin/build-cache.php``
+``php bin/cahe-url.php index.php?controller=category&id_category=1``
 
