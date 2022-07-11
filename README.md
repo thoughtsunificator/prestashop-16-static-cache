@@ -1,6 +1,6 @@
 # prestashop-1-6-static-cache
 
-Forked from https://github.com/PrestaShop/PrestaShop-1.6
+Static cache for Prestashop 1.6
 
 ## Getting started
 
