@@ -3,9 +3,9 @@
 final class StaticCache {
 
 	public static $SERVER_NAME = "localhost";
-	public static $MAX_PROCESS = 10;
+	public static $PARALLEL = 100;
 	public static $KEY_ID = "my_site_";
-	public static $HTTP_HOST = "localhost:8001";
+	public static $HTTP_HOST = "localhost:8041";
 	public static $HTTP_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0";
 	public static $MAP = [
 		["controller-slug" => "category", "controller" => "category", "targetQueryParameter" => "id_category", "path" => "/index.php" ],
@@ -68,13 +68,23 @@ final class StaticCache {
 	 * @param string $url
 	 */
 	public static function cache($url) {
-		$count = (int)shell_exec("pgrep -cf \"php -f ".dirname(__FILE__)."/../bin/cache-url.php\"");
-		if($count >= self::$MAX_PROCESS) {
-			self::cache($url);
-		} else {
-			echo "Caching ".$url["url"]. ($url["auth"] ? " (auth)" : "")."\n";
-			pclose(popen("php -f ".dirname(__FILE__)."/../bin/cache-url.php \"".$url["url"]."\"".($url["auth"] ? " auth" : "")." 2>/dev/null &", "r"));
-		}
+		require_once(dirname(__FILE__). "/../config/static-cache.php");
+		require_once(dirname(__FILE__).'/../config/config.inc.php');
+		ini_set("error_reporting", "E_ERROR | E_WARNING | E_PARSE");
+		echo "Attempting to cache ".$url["url"]. ($url["auth"] ? " (auth)" : "")."\n";
+		define("IS_CLI", true);
+		define('_PS_MODE_DEV_', false);
+		define('_PS_DISPLAY_COMPATIBILITY_WARNING_', false);
+		define('_PS_DEBUG_SQL_', false);
+		define('_PS_DEBUG_PROFILING_', false);
+		define('_PS_SMARTY_CACHE_', null);
+		define('_PS_SMARTY_FORCE_COMPILE_', 1);
+		StaticCache::emulateBrowser();
+		$parsedURL = parse_url($url["url"]);
+		$_SERVER['REQUEST_URI'] = $url["url"];
+		$_SERVER['QUERY_STRING'] = $parsedURL["query"];
+		parse_str($parsedURL["query"], $_GET);
+		Dispatcher::getInstance()->dispatch();
 	}
 
 	public static function emulateAuth() {
@@ -84,6 +94,14 @@ final class StaticCache {
 		Context::getContext()->cookie->customer_lastname = "account";
 		Context::getContext()->customer = $customer;
 		Context::getContext()->cookie->write();
+	}
+
+	public static function get($key) {
+		return StaticCache::$MEMCACHED->get($key);
+	}
+
+	public static function set($key, $str) {
+		StaticCache::$MEMCACHED->set($key, $str);
 	}
 
 	/**

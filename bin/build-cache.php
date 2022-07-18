@@ -1,11 +1,6 @@
 <?php
-
-set_time_limit(0);
-error_reporting( E_ALL );
-define("IS_CLI", true);
 require_once(dirname(__FILE__). "/../config/static-cache.php");
 require_once(dirname(__FILE__).'/../config/config.inc.php');
-StaticCache::emulateBrowser();
 $resume = false;
 $auth = false;
 if(count($argv) >= 2) {
@@ -31,15 +26,41 @@ foreach($products as $key => $value) {
 if($resume) {
 	$countBefore = count($urls);
 	$urls = array_filter($urls, function($element) {
-		return !StaticCache::$MEMCACHED->get($element["url"]);
+		return !StaticCache::get($element["url"]);
 	});
 	echo "Skipping ".($countBefore - count($urls)). " urls\n";
 }
 $time_start = microtime(true);
+
+$jobs = array();
 foreach($urls as $key => $url) {
-	StaticCache::cache($url);
-	echo "Progress ".($key + 1)." / ".count($urls). "\n";
+	echo "Adding ".$url["url"]." to job queue.\n";
+	array_push($jobs, function() use ($url) {
+		StaticCache::cache($url);
+	});
 }
+$parallel = min(StaticCache::$PARALLEL, count($urls));
+$forks = array();
+$jobNr = 0;
+echo "Processing job queue.";
+while ($jobNr < count($jobs) || count($forks)) {
+	while (count($forks) < $parallel && $jobNr < count($jobs)  && ($job = $jobs[$jobNr])) {
+		$jobNr++;
+		if (($forks[] = pcntl_fork()) === 0) {
+			echo "job $jobNr has started\n";
+			call_user_func($job);
+			exit(0);
+		}
+	}
+	do {
+		if ($pid = pcntl_wait($status)) {
+			echo "job $pid has finished\n";
+			$jobId = array_search($pid, $forks);
+			unset($forks[$jobId]);
+		}
+	} while (count($forks) >= $parallel);
+}
+
 $time_end = microtime(true);
 $time = $time_end - $time_start;
 echo "Cache built in $time seconds !\n";

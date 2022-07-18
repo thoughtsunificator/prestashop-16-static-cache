@@ -7,7 +7,7 @@ class Dispatcher extends DispatcherCore {
 	public function dispatch() {
 		if(!defined('IS_CLI') && $_SERVER["REQUEST_METHOD"] === "GET") {
 			$key = StaticCache::getKey();
-			$str = StaticCache::$MEMCACHED->get($key);
+			$str = StaticCache::get($key);
 			if($str !== false) {
 				echo $str;
 			} else {

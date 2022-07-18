@@ -5,9 +5,13 @@ ARG GROUP_ID
 ARG USER_ID
 
 RUN apt-get update \
-  && apt-get install -y libmemcached11 libmemcachedutil2 build-essential libmemcached-dev libz-dev memcached \
+  && apt-get install -y libmemcached11 libmemcachedutil2 build-essential libmemcached-dev libz-dev memcached git \
   && pecl install memcached-2.2.0  \
   && docker-php-ext-enable memcached
+
+RUN docker-php-ext-configure pcntl --enable-pcntl \
+  && docker-php-ext-install \
+    pcntl
 
 RUN pecl install xdebug-2.5.5 \
     && docker-php-ext-enable xdebug

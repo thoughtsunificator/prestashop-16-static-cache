@@ -18,9 +18,11 @@ class FrontController extends FrontControllerCore {
 			ob_clean();
 			$key = StaticCache::getKey();
 			if(!defined("STATIC_CACHE_PAGE_ERROR") && $key !== null) {
-				StaticCache::$MEMCACHED->set($key, $str);
+				echo "$key cached\n";
+				StaticCache::set($key, $str);
+			} else {
+				echo "$key could not be cached\n";
 			}
-			echo $str;
 		}
 	}
 
