@@ -1,5 +1,5 @@
 <?php
-
+require_once(dirname(__FILE__). "/../config/static-cache.php");
 set_error_handler(function($num, $str, $file, $line, $context = null) {
 	// error_log("$num, $str, $file, $line, $context");
 });
