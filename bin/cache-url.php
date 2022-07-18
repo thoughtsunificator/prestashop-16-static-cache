@@ -6,9 +6,8 @@ set_error_handler(function($num, $str, $file, $line, $context = null) {
 set_exception_handler(function(Throwable $exception) {
   error_log("Uncaught exception: " , $exception->getMessage());
 });
+$auth = false;
 if(count($argv) >= 2) {
-	if($argv[2] === "auth") {
-		StaticCache::emulateAuth();
-	}
+	$auth = $argv[2] === "auth";
 }
-StaticCache::cache($argv[1]);
+StaticCache::cache(["url" => $argv[1], "auth" => false]);

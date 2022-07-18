@@ -65,7 +65,7 @@ final class StaticCache {
 	}
 
 	/**
-	 * @param string $url
+	 * @param  $data array('url' => string, 'auth' => boolean)
 	 */
 	public static function cache($url) {
 		require_once(dirname(__FILE__). "/../config/static-cache.php");
@@ -79,11 +79,14 @@ final class StaticCache {
 		define('_PS_DEBUG_PROFILING_', false);
 		define('_PS_SMARTY_CACHE_', null);
 		define('_PS_SMARTY_FORCE_COMPILE_', 1);
-		StaticCache::emulateBrowser();
 		$parsedURL = parse_url($url["url"]);
 		$_SERVER['REQUEST_URI'] = $url["url"];
 		$_SERVER['QUERY_STRING'] = $parsedURL["query"];
 		parse_str($parsedURL["query"], $_GET);
+		StaticCache::emulateBrowser();
+		if($url["auth"]) {
+			StaticCache::emulateAuth();
+		}
 		Dispatcher::getInstance()->dispatch();
 	}
 
@@ -96,10 +99,18 @@ final class StaticCache {
 		Context::getContext()->cookie->write();
 	}
 
+	/**
+	 * @param string $key
+	 * @return string
+	 */
 	public static function get($key) {
 		return StaticCache::$MEMCACHED->get($key);
 	}
 
+	/**
+	 * @param string $key
+	 * @param string $str
+	 */
 	public static function set($key, $str) {
 		StaticCache::$MEMCACHED->set($key, $str);
 	}
