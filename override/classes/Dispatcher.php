@@ -10,13 +10,14 @@ class Dispatcher extends DispatcherCore {
 			$str = StaticCache::get($key);
 			if($str !== false) {
 				echo $str;
+				exit(0);
 			} else {
 				parent::dispatch();
 			}
 		} else {
 			parent::dispatch();
 		}
-
 	}
+
 
 }

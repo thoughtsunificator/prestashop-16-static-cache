@@ -1,6 +1,8 @@
 <?php
+
 require_once(dirname(__FILE__). "/../config/static-cache.php");
 require_once(dirname(__FILE__).'/../config/config.inc.php');
+$time_start = microtime(true);
 $resume = false;
 $auth = false;
 if(count($argv) >= 2) {
@@ -30,8 +32,6 @@ if($resume) {
 	});
 	echo "Skipping ".($countBefore - count($urls)). " urls\n";
 }
-$time_start = microtime(true);
-
 $jobs = array();
 foreach($urls as $key => $url) {
 	echo "Adding ".$url["url"]." to job queue.\n";

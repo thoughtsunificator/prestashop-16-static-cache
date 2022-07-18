@@ -2,7 +2,7 @@
 
 final class StaticCache {
 
-	public static $SERVER_NAME = "localhost";
+	public static $SERVER_NAME = "localhost:8041";
 	public static $PARALLEL = 100;
 	public static $KEY_ID = "my_site_";
 	public static $HTTP_HOST = "localhost:8041";
@@ -11,7 +11,7 @@ final class StaticCache {
 		["controller-slug" => "category", "controller" => "category", "targetQueryParameter" => "id_category", "path" => "/index.php" ],
 		["controller-slug" => "my-account", "controller" => "myaccount", "path" => "/index.php" ],
 		["controller-slug" => "product", "controller" => "product", "targetQueryParameter" => "id_product", "path" => "/index.php" ],
-		["controller-slug" => "index", "controller" => "index", "alias" => "", "blacklistQueryParameters" => ["mylogout"], "path" => "/index.php" ],
+		["controller-slug" => "index", "controller" => "index", "blacklistQueryParameters" => ["mylogout"], "path" => "/index.php" ],
 		["controller-slug" => "prices-drop", "controller" => "pricesdrop", "blacklistQueryParameters" => [], "path" => "/index.php" ],
 		["controller-slug" => "new-products", "controller" => "newproducts", "blacklistQueryParameters" => [], "path" => "/index.php" ],
 		["controller-slug" => "best-sales", "controller" => "bestsales", "blacklistQueryParameters" => [], "path" => "/index.php" ],
@@ -69,7 +69,7 @@ final class StaticCache {
 	 */
 	public static function cache($url) {
 		require_once(dirname(__FILE__).'/../config/config.inc.php');
-		ini_set("error_reporting", "E_ERROR | E_WARNING | E_PARSE");
+		ini_set("error_reporting", E_ERROR | E_PARSE);
 		echo "Attempting to cache ".$url["url"]. ($url["auth"] ? " (auth)" : "")."\n";
 		define("IS_CLI", true);
 		define('_PS_MODE_DEV_', false);
@@ -78,15 +78,20 @@ final class StaticCache {
 		define('_PS_DEBUG_PROFILING_', false);
 		define('_PS_SMARTY_CACHE_', null);
 		define('_PS_SMARTY_FORCE_COMPILE_', 1);
+		StaticCache::emulateBrowser();
 		$parsedURL = parse_url($url["url"]);
 		$_SERVER['REQUEST_URI'] = $url["url"];
 		$_SERVER['QUERY_STRING'] = $parsedURL["query"];
 		parse_str($parsedURL["query"], $_GET);
-		StaticCache::emulateBrowser();
 		if($url["auth"]) {
 			StaticCache::emulateAuth();
 		}
+		$time_start = microtime(true);
 		Dispatcher::getInstance()->dispatch();
+		echo "key: ".StaticCache::getKey()."\n";
+		$time_end = microtime(true);
+		$time = $time_end - $time_start;
+		echo "Finished in $time seconds !\n";
 	}
 
 	public static function emulateAuth() {
@@ -119,11 +124,11 @@ final class StaticCache {
 	 */
 	public static function getKey() {
 		$controller = Dispatcher::getInstance()->getController();
-		if(defined("_PS_ADMIN_DIR_")) {
+		if(defined("_PS_ADMIN_DIR_") || $controller === "") {
 			return null;
 		}
 		$mapEntry = current(array_filter(self::$MAP, function($element) use($controller) {
-			return $element["controller"] === $controller || ($element["alias"] === $controller);
+			return $element["controller"] === $controller;
 		}));
 		$url = parse_url($_SERVER["REQUEST_URI"]);
 		if( $mapEntry !== false
